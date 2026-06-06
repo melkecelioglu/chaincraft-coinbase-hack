@@ -1,8 +1,10 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { useWalletClient, usePublicClient } from 'wagmi';
-import { encodeAbiParameters, encodeDeployData, decodeEventLog } from 'viem';
+import { encodeDeployData, decodeEventLog } from 'viem';
+import { baseSepolia } from 'viem/chains';
+import { useWallet } from '@/hooks/use-wallet';
+import { getWalletClient, publicClient } from '@/lib/viem';
 import api from '@/lib/api';
 import { FACTORY_ADDRESS, FACTORY_ABI, DEPLOY_FEE } from '@/lib/factory';
 
@@ -23,17 +25,13 @@ interface DeployResult {
 }
 
 export function useDeployContract() {
-  const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient();
+  const { wallet } = useWallet();
   const [isDeploying, setIsDeploying] = useState(false);
 
   const deploy = useCallback(
     async (params: DeployParams): Promise<DeployResult> => {
-      if (!walletClient) {
+      if (!wallet) {
         throw new Error('Wallet not connected');
-      }
-      if (!publicClient) {
-        throw new Error('Public client not available');
       }
       if (!FACTORY_ADDRESS) {
         throw new Error('Factory address not configured');
@@ -41,6 +39,11 @@ export function useDeployContract() {
 
       setIsDeploying(true);
       try {
+        // 0. Ensure the wallet is on Base Sepolia before sending the tx.
+        // A user rejection throws and surfaces via the consumer's error path.
+        await wallet.switchChain(baseSepolia.id);
+        const walletClient = await getWalletClient(wallet);
+
         // 1. Combine bytecode + encoded constructor args
         const bytecodeHex = `0x${params.bytecode}` as `0x${string}`;
         let fullBytecode: `0x${string}`;
@@ -111,7 +114,7 @@ export function useDeployContract() {
         setIsDeploying(false);
       }
     },
-    [walletClient, publicClient],
+    [wallet],
   );
 
   return { deploy, isDeploying };
