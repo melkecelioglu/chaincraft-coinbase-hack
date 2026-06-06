@@ -1,8 +1,10 @@
 import { baseSepolia } from 'viem/chains';
 import type { PrivyClientConfig } from '@privy-io/react-auth';
 
+// Fallback must be exactly 25 chars — Privy's SDK validates app-id length
+// at provider init (even during SSG). Real IDs come from dashboard.privy.io.
 export const PRIVY_APP_ID =
-  process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'insert-privy-app-id';
+  process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'insert-privy-app-id-xxxxx';
 
 // Connect-only setup: Privy is only the wallet-connection UI.
 // Auth stays SIWE → backend JWT; Privy's own login/auth is never used.
