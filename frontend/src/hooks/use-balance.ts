@@ -5,30 +5,30 @@ import { formatEther } from 'viem';
 import { publicClient } from '@/lib/viem';
 
 // Cosmetic navbar balance — fetched once per address change, no polling.
-// Errors resolve to null (balance display is best-effort).
+// Errors resolve to null (balance display is best-effort). State is keyed
+// by address and derived on read, so no setState is needed in the effect
+// body (react-hooks/set-state-in-effect) and a stale balance never shows
+// for a different address.
 export function useBalance(address?: string) {
-  const [balance, setBalance] = useState<string | null>(null);
+  const [data, setData] = useState<{ address: string; balance: string } | null>(null);
 
   useEffect(() => {
-    if (!address) {
-      setBalance(null);
-      return;
-    }
+    if (!address) return;
     let cancelled = false;
     publicClient
       .getBalance({ address: address as `0x${string}` })
       .then((wei) => {
         if (!cancelled) {
-          setBalance(`${Number(formatEther(wei)).toFixed(4)} ETH`);
+          setData({ address, balance: `${Number(formatEther(wei)).toFixed(4)} ETH` });
         }
       })
       .catch(() => {
-        if (!cancelled) setBalance(null);
+        if (!cancelled) setData(null);
       });
     return () => {
       cancelled = true;
     };
   }, [address]);
 
-  return balance;
+  return data && data.address === address ? data.balance : null;
 }
