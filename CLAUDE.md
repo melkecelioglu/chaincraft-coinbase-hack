@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Monorepo with NestJS backend API and Next.js frontend for blockchain/smart contract management with OpenAI integration. Uses OpenAI Responses API (gpt-5.2) for AI-driven contract generation and analysis, ethers.js + solc-js for contract compilation (Base Sepolia), backed by MongoDB 8.2 with mongot for vector search. Includes a contract marketplace with AI-enriched templates and semantic search.
 
-**Auth:** RainbowKit wallet connect + SIWE (EIP-4361) sign-in. No email/password. Backend issues JWT after wallet signature verification. Frontend uses wagmi + viem for wallet interactions.
+**Auth:** Privy wallet connect (connect-only) + SIWE (EIP-4361) sign-in. No email/password. Backend issues JWT after wallet signature verification. Frontend uses @privy-io/react-auth + viem for wallet interactions.
 
-**Deploy flow:** Frontend-side. Backend compiles contracts (returns ABI + bytecode), user's wallet signs deploy tx via wagmi, then frontend registers deployment with backend.
+**Deploy flow:** Frontend-side. Backend compiles contracts (returns ABI + bytecode), user's wallet signs deploy tx via viem (Privy EIP-1193 provider), then frontend registers deployment with backend.
 
 ## Repository Structure
 
@@ -131,7 +131,7 @@ PORT (default: 3001), CORS_ORIGIN (default: true), BASESCAN_API_KEY
 Optional in `frontend/.env.local`:
 ```
 NEXT_PUBLIC_API_URL (default: http://localhost:3001)
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID (for WalletConnect v2)
+NEXT_PUBLIC_PRIVY_APP_ID (Privy app ID from dashboard.privy.io)
 ```
 
 Swagger docs at `/api`.
@@ -172,7 +172,7 @@ This project has a backend API and a Next.js frontend. When implementing UI from
 ### API-Aware Implementation Rules
 
 - IMPORTANT: All frontend components that call this API must match the DTOs defined in `backend/src/*/dto/` — check DTO shapes before building forms or data displays
-- IMPORTANT: Auth uses RainbowKit wallet connect + SIWE. Backend: `GET /auth/nonce` then `POST /auth/verify` with SIWE message+signature to get JWT. Current user: `GET /auth/user`
+- IMPORTANT: Auth uses Privy wallet connect + SIWE. Backend: `GET /auth/nonce` then `POST /auth/verify` with SIWE message+signature to get JWT. Current user: `GET /auth/user`
 - API base URL is configured via environment; default port is `3001`
 - Swagger docs at `/api` are the source of truth for request/response shapes
 - All resource endpoints require `Authorization: Bearer <token>` header except routes decorated with `@Public()`
@@ -181,7 +181,7 @@ This project has a backend API and a Next.js frontend. When implementing UI from
 
 | API Route | Typical UI Component |
 |---|---|
-| RainbowKit ConnectButton | Wallet connect + SIWE sign-in (replaces auth forms) |
+| Privy connect modal | Wallet connect + SIWE sign-in (replaces auth forms) |
 | `GET /auth/user` | User profile display |
 | `/projects/*` | Project list, project detail, CRUD forms |
 | `/tokens/*` | Token/contract records table, filter controls |
