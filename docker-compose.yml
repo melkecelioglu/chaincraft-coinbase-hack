@@ -82,7 +82,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: https://api.chaincraft.app
-        NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: e7d13680e9ad93fe541ab76812c98240
+        NEXT_PUBLIC_PRIVY_APP_ID: cmq2r9xgv00g10bjs3kjwcz3l
         NEXT_PUBLIC_FACTORY_ADDRESS: '0x4f6BFD2D3c562CF5f6Fc6252B54931168E538AEB'
     depends_on:
       backend:

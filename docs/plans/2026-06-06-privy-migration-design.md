@@ -31,7 +31,7 @@ Replace the RainbowKit + wagmi + WalletConnect wallet-connection stack with Priv
 
 ### `src/lib/privy.ts` (NEW — replaces deleted `src/lib/wagmi.ts`)
 
-- `export const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'insert-privy-app-id'`
+- `export const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'insert-privy-app-id-xxxxx'`
 - `export const privyConfig: PrivyClientConfig`:
   - `defaultChain: baseSepolia`, `supportedChains: [baseSepolia]` — imported from `viem/chains` (not `wagmi/chains`)
   - `appearance: { walletChainType: 'ethereum-only', theme, accentColor }` — accent colors preserve current RainbowKit theme: `#0f172a` (light) / `#e2e8f0` (dark)

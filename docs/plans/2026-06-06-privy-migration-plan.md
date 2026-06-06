@@ -10,7 +10,9 @@
 
 **Spec:** `docs/plans/2026-06-06-privy-migration-design.md` (approved)
 
-**Testing note:** The frontend has no unit-test harness (only Playwright e2e, whose `auth.spec.ts` is already stale — it tests a removed email/password flow and is out of scope). The per-task gate is `npm run build` (full type-check) from `frontend/`; final gates are `npm run lint`, a grep sweep for dead imports, and a browser smoke test. Tasks 2–5 are build-green but runtime-transitional (wagmi hooks without WagmiProvider) — runtime is only expected to work again after Task 5.
+**Testing note:** The frontend has no unit-test harness (only Playwright e2e, whose `auth.spec.ts` is already stale — it tests a removed email/password flow and is out of scope). Final gates are `npm run build`, `npm run lint`, a grep sweep for dead imports, and a browser smoke test.
+
+**Gate correction (discovered during Task 2):** `next build` PRERENDERS pages, i.e. it executes the app server-side — so during the transitional window (PrivyProvider in, but hooks/navbar still on wagmi) the full build fails with `WagmiProviderNotFoundError`, not just at runtime. Therefore: Tasks 2–4 gate on `npx tsc --noEmit` (type-check only); the full `npm run build` gate resumes at Task 5 (when no component references wagmi anymore) and stays for Tasks 6–8. Also discovered: Privy validates app-id LENGTH (exactly 25 chars) at provider init, which runs during SSG — the placeholder is therefore `insert-privy-app-id-xxxxx` (25 chars).
 
 **All commands run from `/Users/midex/Documents/openai-func/frontend` unless stated otherwise.**
 
@@ -37,7 +39,7 @@ import { baseSepolia } from 'viem/chains';
 import type { PrivyClientConfig } from '@privy-io/react-auth';
 
 export const PRIVY_APP_ID =
-  process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'insert-privy-app-id';
+  process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'insert-privy-app-id-xxxxx';
 
 // Connect-only setup: Privy is only the wallet-connection UI.
 // Auth stays SIWE → backend JWT; Privy's own login/auth is never used.
@@ -709,7 +711,7 @@ Old (line 85):
 ```
 New:
 ```yaml
-        NEXT_PUBLIC_PRIVY_APP_ID: insert-privy-app-id
+        NEXT_PUBLIC_PRIVY_APP_ID: insert-privy-app-id-xxxxx
 ```
 (The placeholder is intentional — user will paste the real App ID from dashboard.privy.io.)
 
@@ -747,7 +749,7 @@ ENV NEXT_PUBLIC_PRIVY_APP_ID=$NEXT_PUBLIC_PRIVY_APP_ID
 - [ ] **Step 4: Create `frontend/.env.local`**
 
 ```bash
-printf 'NEXT_PUBLIC_PRIVY_APP_ID=insert-privy-app-id\n' > .env.local
+printf 'NEXT_PUBLIC_PRIVY_APP_ID=insert-privy-app-id-xxxxx\n' > .env.local
 ```
 (File is gitignored — placeholder until the user creates a Privy app.)
 
