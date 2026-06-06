@@ -1,0 +1,15 @@
+node_modules
+dist
+frontend
+.git
+.gitignore
+docker
+.env*
+.next
+.claude
+docs
+coverage
+*.md
+scripts
+.playwright-mcp
+cdp_api_key.json

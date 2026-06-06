@@ -1,0 +1,101 @@
+services:
+  mongod:
+    image: mongodb/mongodb-community-server:8.2.0-ubi9
+    command: >-
+      mongod
+      --config /etc/mongod.conf
+      --replSet rs0
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+      - ./backend/docker/mongod.conf:/etc/mongod.conf:ro
+    networks:
+      - mongo-network
+    healthcheck:
+      test: mongosh --quiet --eval "db.adminCommand('ping')" || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  mongod-setup:
+    image: mongodb/mongodb-community-server:8.2.0-ubi9
+    depends_on:
+      mongod:
+        condition: service_healthy
+    command: bash /setup-replica-set.sh
+    volumes:
+      - ./backend/docker/setup-replica-set.sh:/setup-replica-set.sh:ro
+    networks:
+      - mongo-network
+    restart: 'no'
+
+  mongot:
+    image: mongodb/mongodb-community-search:0.53.1
+    entrypoint: ['sh', '-c', 'cp /tmp/pwfile-src /mongot-community/pwfile && chmod 400 /mongot-community/pwfile && /mongot-community/mongot --config /mongot-community/config.default.yml']
+    environment:
+      - JAVA_TOOL_OPTIONS=-XX:UseSVE=0
+    ports:
+      - '27028:27028'
+    volumes:
+      - mongot-data:/data/mongot
+      - ./backend/docker/mongot.conf:/mongot-community/config.default.yml:ro
+      - ./backend/docker/pwfile:/tmp/pwfile-src:ro
+    depends_on:
+      mongod:
+        condition: service_healthy
+      mongod-setup:
+        condition: service_completed_successfully
+    networks:
+      - mongo-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      mongod-setup:
+        condition: service_completed_successfully
+    ports:
+      - '3001:3001'
+    environment:
+      - DB_CONNECTION_STRING=mongodb://mongod:27017/openai-func?directConnection=true
+      - PORT=3001
+      - CORS_ORIGIN=https://beta.chaincraft.app
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - BASE_SEPOLIA_RPC_URL=${BASE_SEPOLIA_RPC_URL}
+      - BASESCAN_API_KEY=${BASESCAN_API_KEY}
+    networks:
+      - mongo-network
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:3001/api || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://api.chaincraft.app
+        NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: e7d13680e9ad93fe541ab76812c98240
+        NEXT_PUBLIC_FACTORY_ADDRESS: '0x4f6BFD2D3c562CF5f6Fc6252B54931168E538AEB'
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - '3002:3000'
+    networks:
+      - mongo-network
+
+volumes:
+  mongo-data:
+  mongot-data:
+
+networks:
+  mongo-network:
+    name: mongo-network
